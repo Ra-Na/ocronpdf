@@ -1,6 +1,6 @@
 # ocronpdf.py
 
-is a python3 script that ocrs a pdf with a transparent text overlay, assuming one page-sized images per page.
+is a python3 script that ocrs a pdf with a transparent text overlay, assuming one page-sized image per page.
 
 It requires
 - easyocr with all dependencies
