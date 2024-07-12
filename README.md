@@ -1,6 +1,6 @@
 # ocronpdf.py
 
-is a python3 script that ocrs a pdf with a transparent text overlay, assuming one page-sized image per page in portrait orientation.
+is a python3 script that ocrs a pdf with a transparent text overlay, assuming one page-sized image per page in portrait orientation. Instead of tesseract it uses easyocr.
 
 It requires
 - easyocr with all dependencies
@@ -8,6 +8,5 @@ It requires
 - imagemagick 
 - pdfimages
 
-Works for me, but does not handle edge cases and bad input. Hence it is still simple and malable to your needs, or a starting point for a more elaborate implementation.
-
+Works for me, but does not handle edge cases, landscape images, bad input and whatnot. Expect belly-landings which are easy to fix, since the script is rather simple and malable to your needs. Alternatives are ocrmypdf if you prefer tesseract.
 
