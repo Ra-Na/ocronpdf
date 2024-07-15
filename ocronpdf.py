@@ -2,10 +2,10 @@
 import sys
 import glob
 def usage():
-    print("Call like so:   ./ocr.py input.pdf en:de:es dpi '_']")
-    print("  languages for ocr, colon-separated_/     /    /   ")
-    print("  target dpi, 300 is recommended _________/    /    ")
-    print("  optional: forbidden chars between ' in ocr__/     ")
+    print("Call like so:   ./ocronpdf.py input.pdf en:de:es dpi '_']")
+    print("       languages for ocr, colon-separated_/     /    /   ")
+    print("       target dpi, 300 is recommended _________/    /    ")
+    print("       optional: forbidden chars between ' in ocr__/     ")
     sys.exit()
 
 captureoutput = True  # set false for debugging info
