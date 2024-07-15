@@ -3,9 +3,9 @@ import sys
 import glob
 def usage():
     print("Call like so:   ./ocronpdf.py input.pdf en:de:es dpi '_']")
-    print("       languages for ocr, colon-separated_/     /    /   ")
-    print("       target dpi, 300 is recommended _________/    /    ")
-    print("       optional: forbidden chars between ' in ocr__/     ")
+    print("  languages for ocr, colon-separated______/     /    /   ")
+    print("  target dpi, 300 is recommended ______________/    /    ")
+    print("  optional: forbidden chars between ' in ocr_______/     ")
     sys.exit()
 
 captureoutput = True  # set false for debugging info
@@ -40,17 +40,26 @@ noofpages= len(pages)
 # 1.1 Process scans for better ocr-ability.
 import os
 pagesimp = [page[:-4] + '_improved' + page[-4:] for page in pages]
-print("Improving "+str(noofpages)+" pages for better text recognition:")
-for page, pageimp in zip(pages, pagesimp):
-    print(page+" --> "+pageimp+": ",end='')
-    process  = subprocess.run('./textcleaner -e normalize -u -T -s 4 '+page+' '+pageimp, shell=True)
-    psize = os.path.getsize(page) 
-    pimpsize = os.path.getsize(pageimp) 
-    print(str(round(100.0*float(pimpsize-psize)/float(psize),2))+"%")
-    if(psize<pimpsize):
-        print("Probably an empty page, retaining original file.")
+
+if glob.glob("textcleaner"):
+    print("Improving "+str(noofpages)+" pages for better text recognition:")
+    for page, pageimp in zip(pages, pagesimp):
+        print(page+" --> "+pageimp+": ",end='')
+        process  = subprocess.run('./textcleaner -e normalize -u -T -s 4 '+page+' '+pageimp, shell=True)
+        psize = os.path.getsize(page) 
+        pimpsize = os.path.getsize(pageimp) 
+        print(str(round(100.0*float(pimpsize-psize)/float(psize),2))+"%")
+        if(psize<pimpsize):
+            print("Probably an empty page, retaining original file.")
+            process = subprocess.run(['cp '+ page + " " + pageimp], shell=True, capture_output=captureoutput)
+else:
+    print("Here you might want to add some ocr preprocessing steps. Feel free to use unpaper or the like. I recommend you do:")
+    print("curl 'http://www.fmwconcepts.com/imagemagick/downloadcounter.php?scriptname=textcleaner&dirname=textcleaner' > textcleaner")
+    print("chmod +x textcleaner")
+    print("'textcleaner' is not included here due to licensing requirements. You are not allowed to redistribute it or use it commercially without consulting the author.")
+    print("For now I just copy the files.")
+    for page, pageimp in zip(pages, pagesimp):
         process = subprocess.run(['cp '+ page + " " + pageimp], shell=True, capture_output=captureoutput)
-print(" ")
 
 print("Compressing to png sidecar from jbig2.")
 # 1.2 Compress with JBIG2 and retain well-compressed sidecar png, page by page. 
