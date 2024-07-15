@@ -2,15 +2,22 @@
 import sys
 import glob
 def usage():
-    print("Call like so:   ./ocronpdf.py input.pdf en:de:es dpi '_']")
+    print("Call like so:   ./ocronpdf.py input.pdf en:de:es dpi '_' ")
     print("  languages for ocr, colon-separated______/     /    /   ")
     print("  target dpi, 300 is recommended ______________/    /    ")
-    print("  optional: forbidden chars between ' in ocr_______/     ")
-    sys.exit()
+    print("  optional: forbidden ocr chars between ''_________/     ")
+    sys.exit(-1)
 
-captureoutput = True  # set false for debugging info
+captureoutput = True  # set False for debugging info
+cleanup = True # set False to retain image files
 
-# Check arguments
+# Todo:
+# - Error handling
+# - Parallelization
+# - Documentation
+# - Replace fpdf usage by pymupdf usage
+
+# 0.0 Check arguments
 if not glob.glob(sys.argv[1]):
     print("Input file not found.")
     usage()
@@ -20,18 +27,19 @@ if(len(sys.argv)>3):
     try: 
         dpi = int(sys.argv[3])
         if dpi<1:
-            print("DPI specification errorneous, should be positive.")
+            print("DPI should be positive.")
             usage()
     except:
-        print("DPI specification errorneous, should be an integer.")
+        print("DPI should be an integer.")
         usage()
 
-# 1. Break pdf into all pages, assuming each page is one page-sized image, portrait, A4.
 import subprocess
-# Clean old files
+# 0.2 Clean old files
 print("Cleaning up potential garbage.")
 process  = subprocess.run(['rm pages-*'], shell=True, capture_output=captureoutput)
 process  = subprocess.run(['rm output*'], shell=True, capture_output=captureoutput)
+# 0.3 Break pdf into individuall pages, assuming each page is one page-sized image, portrait, A4. 
+#     This is like virtual printing. Do not use pdfimages -> belly-lands when a page contains multiple images. 
 print("Extracting pages.")
 process  = subprocess.run(['pdftoppm -png -progress -r '+sys.argv[3]+' '+sys.argv[1]+' pages'], shell=True)  
 pages    = sorted(list(glob.glob('pages-*')))
@@ -42,7 +50,7 @@ import os
 pagesimp = [page[:-4] + '_improved' + page[-4:] for page in pages]
 
 if glob.glob("textcleaner"):
-    print("Improving "+str(noofpages)+" pages for better text recognition:")
+    print("Improving "+str(noofpages)+" pages for better text recognition. Here(*) you may want to hand-pick some options.")
     for page, pageimp in zip(pages, pagesimp):
         print(page+" --> "+pageimp+": ",end='')
         process  = subprocess.run('./textcleaner -e normalize -u -T -s 4 '+page+' '+pageimp, shell=True)
@@ -53,16 +61,18 @@ if glob.glob("textcleaner"):
             print("Probably an empty page, retaining original file.")
             process = subprocess.run(['cp '+ page + " " + pageimp], shell=True, capture_output=captureoutput)
 else:
-    print("Here you might want to add some ocr preprocessing steps. Feel free to use unpaper or the like. I recommend you do:")
+    print("\033[93m"+"Here you might want to add some preprocessing steps for better ocr. I recommend you do")
     print("curl 'http://www.fmwconcepts.com/imagemagick/downloadcounter.php?scriptname=textcleaner&dirname=textcleaner' > textcleaner")
     print("chmod +x textcleaner")
-    print("'textcleaner' is not included here due to licensing requirements. You are not allowed to redistribute it or use it commercially without consulting the author.")
-    print("For now I just copy the files.")
+    print("before the next run. 'textcleaner' is not included here due to licensing requirements: it is fine for private use but")
+    print("redistribution or commercial requires consent of the author. Alternatives are unpaper, scantailor, or scripting with")
+    print("imagemagick or gimp. For now I just copy the files."+"\033[0m")
     for page, pageimp in zip(pages, pagesimp):
         process = subprocess.run(['cp '+ page + " " + pageimp], shell=True, capture_output=captureoutput)
 
 print("Compressing to png sidecar from jbig2.")
 # 1.2 Compress with JBIG2 and retain well-compressed sidecar png, page by page. 
+#     The compression is awesome but lossy. For non-lossy compression try pngcrush.
 pagesic  = [page[:-4] + '_compressed' + page[-4:] for page in pagesimp]
 for pageimp, pageic in zip(pagesimp, pagesic):
     process  = subprocess.run('jbig2 -s -p -O '+pageic+' '+pageimp+' > /dev/null', shell=True, capture_output=captureoutput)
@@ -79,21 +89,21 @@ for item in pagesimp:
 process  = subprocess.run('jbig2 -s -p'+string, shell=True)
 process  = subprocess.run('python3 pdf.py output > output.pdf', shell=True)
 
-# 2. Apply easyocr to all pages, use improved images.
-print("Calling easyocr on all pages.")
+# 2.0 Apply easyocr.
+print("Applying easyocr to improved, uncompressed pages. Here(**) you may want to hand-pick some options.")
 import easyocr
 reader = easyocr.Reader(lang_list = sys.argv[2].split(":"))
 if(len(sys.argv)>4):
     bl=sys.argv[4]
 else:
     bl=''
-# texts = [reader.readtext(page, blocklist=bl) for page in pagesimp]
+# texts = [reader.readtext(page, blocklist=bl) for page in pagesimp] # changed to stuff below for progress indication
 texts = []
 for index in range(len(pagesimp)):
     print("Page "+str(index+1)+" of "+str(len(pagesimp)))
     texts.append(reader.readtext(pagesimp[index], blocklist=bl))
      
-# 3. Rebuild PDF from all pages. 
+# 3.0 Rebuild PDF from all pages. 
 from fpdf import FPDF # needs fpdf2, not fpdf!
 import re
 
@@ -153,15 +163,13 @@ for pageindex in range(len(texts)):
 doc.save(s[:-4] + '_ocred_JB2' + s[-4:], deflate=True, clean=True, deflate_images=True, deflate_fonts=True, garbage=4)
 doc.close()
 
-print("Cleaning up...")
+# 5.0  Unlike everybody else in this house I CLEAN UP AFTER MYSELF.
+if cleanup:
+    print("Cleaning up...")
+    process  = subprocess.run(['rm pages-*'], shell=True)
+    process  = subprocess.run(['rm output.*'], shell=True)
 
-process  = subprocess.run(['mv output.pdf '+s[:-4] + '_JB2' + s[-4:]], shell=True)
-
-#5 4. Unlike everybody else in this house I CLEAN UP AFTER MYSELF.
-process  = subprocess.run(['rm pages-*'], shell=True)
-process  = subprocess.run(['rm output.*'], shell=True)
-
-#6 Show some stats.
+# 6.0 Show some stats and exit gracefully.
 s = sys.argv[1]
 spng = s[:-4] + '_ocred_PNG' + s[-4:]
 sjb2 = s[:-4] + '_ocred_JB2' + s[-4:]
@@ -169,6 +177,9 @@ size    = os.path.getsize(s)
 sizepng = os.path.getsize(spng) 
 sizejb2 = os.path.getsize(sjb2) 
  
-print(s   +": "+"          \t"+'{:>12,.0f}'.format(size))
+print('\033[92m'+s   +": "+"          \t"+'{:>12,.0f}'.format(size))
 print(spng+": \t"+'{:>12,.0f}'.format(sizepng)+"\t"+str(round(100.0*float(sizepng-size)/float(size),2))+"%")
-print(sjb2+": \t"+'{:>12,.0f}'.format(sizejb2)+"\t"+str(round(100.0*float(sizejb2-size)/float(size),2))+"%")
+print(sjb2+": \t"+'{:>12,.0f}'.format(sizejb2)+"\t"+str(round(100.0*float(sizejb2-size)/float(size),2))+"%"+'\033[0m')
+sys.exit(1)
+
+
