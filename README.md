@@ -10,10 +10,10 @@ It requires the following tools:
 - pymupdf (fitz)
 - imagemagick 
 - pdftoppm
-- these standard python libraries: sys, os, glob, subprocess, re
+- standard python libraries: sys, os, glob, subprocess, re
 
 Other dependencies: 
-- It uses the [textcleaner script, http://www.fmwconcepts.com/imagemagick/textcleaner/index.php], which is not included here due to licensing requirements. 
+- It uses a [textcleaner script](http://www.fmwconcepts.com/imagemagick/textcleaner/index.php), which is not included here due to licensing requirements. 
 You can use an alternative like unpaper, or download the script yourself.
 - It includes `pdf.py` from [https://github.com/2m/image-to-jbig2-pdf/tree/master] to assemble a pdf from the jbig2-compressed images
 
