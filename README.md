@@ -16,6 +16,6 @@ Other dependencies:
 You can use an alternative like unpaper, or download the script yourself like so:
 `curl 'http://www.fmwconcepts.com/imagemagick/downloadcounter.php?scriptname=textcleaner&dirname=textcleaner' > textcleaner`
 `chmod +x textcleaner`
-- It includes `pdf.py` from [https://github.com/2m/image-to-jbig2-pdf/tree/master] to assemble a pdf from the jbig2-compressed images
+- It includes `pdf.py` from [image-to-jbig2-pdf](https://github.com/2m/image-to-jbig2-pdf/tree/master) to assemble a pdf from the jbig2-compressed images.
 
 
