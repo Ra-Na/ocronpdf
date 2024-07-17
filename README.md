@@ -6,7 +6,6 @@ It requires the following tools:
 - easyocr 
 - jbig2
 - pngcrush
-- fpdf2 (FPDF)
 - pymupdf (fitz)
 - imagemagick 
 - pdftoppm
