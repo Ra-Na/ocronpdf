@@ -2,36 +2,64 @@
 import sys
 import glob
 def usage():
-    print("Call like so:   ./ocronpdf.py input.pdf en:de:es dpi '_' ")
-    print("  languages for ocr, colon-separated______/     /    /   ")
-    print("  target dpi, 300 is recommended ______________/    /    ")
-    print("  optional: forbidden ocr chars between ''_________/     ")
+    print("Call like so:   ./ocronpdf.py input.pdf en:de:es DPI '<_|>' dr")
+    print("                                /           /     /    /    / ")
+    print("input pdf______________________/           /     /    /    /  ")
+    print("language(s) for ocr, colon-separated______/     /    /    /   ")
+    print("target dpi, 300 is recommended ________________/    /    /    ")
+    print("forbidden ocr chars between apostrophes, may be ''_/    /     ")
+    print("optional, unset by default:____________________________/      ")
+    print("   d = debug output                                           ")
+    print("   r = retain image files (don't cleanup)                     ")
     sys.exit(-1)
 
-captureoutput = True  # set False for debugging info
-cleanup = True # set False to retain image files
+captureoutput = True # prevents console output from other scripts, set False for debugging info or use "d"-option
+cleanup = True # set False to retain image files or use "r"-option
+debug = False # set True or use "d"-option
 
-# Todo:
+# To do:
 # - Error handling
+# - Dependency checking / version checking
 # - Parallelization
 # - Documentation
-# - Replace fpdf usage by pymupdf usage
+# - Replace fpdf usage by pymupdf usage. Pymupdf can handle JB2, unlike fpdf.
 
-# 0.0 Check arguments
+# 0.0 Check arguments 
+if len(sys.argv)<5:
+    print("\033[93m"+"Arguments missing."+"\033[0m")
+    usage()
+# arg 1 - pdf
 if not glob.glob(sys.argv[1]):
     print("Input file not found.")
     usage()
-if(len(sys.argv)<4):
-    usage()
-if(len(sys.argv)>3):
-    try: 
-        dpi = int(sys.argv[3])
-        if dpi<1:
-            print("DPI should be positive.")
-            usage()
-    except:
-        print("DPI should be an integer.")
+# arg 2 - language codes
+valid_lang_codes = {'abq','ady','af','ang','ar','as','ava','az','be','bg','bh','bho','bn','bs','ch_sim','ch_tra','che','cs','cy','da','dar','de','en','es','et','fa','fr','ga','gom','hi','hr','hu','id','inh','is','it','ja','kbd','kn','ko','ku','la','lbe','lez','lt','lv','mah','mai','mi','mn','mr','ms','mt','ne','new','nl','no','oc','pi','pl','pt','ro','ru','rs_cyrillic','rs_latin','sck','sk','sl','sq','sv','sw','ta','tab','te','th','tjk','tl','tr','ug','uk','ur','uz','vi'}
+langlist = sys.argv[2].split(":")
+if not set(langlist) <= valid_lang_codes:
+    print("Supplied language codes not supported by easyocr (2024-07). Offending input: ", set(langlist).difference(valid_lang_codes))
+    sys.exit(-1)
+# arg 3 - DPI
+try: 
+    dpi = int(sys.argv[3])
+    if dpi<1:
+        print("DPI should be positive.")
         usage()
+except:
+    print("DPI should be a positive integer.")
+    usage()
+# arg 4
+bl = sys.argv[4]
+# 
+if(len(sys.argv) >= 6):
+    optionstring = sys.argv[5]
+    if('d' in optionstring):
+        captureoutput = False
+        debug = True
+    if('r' in optionstring):
+        cleanup = False
+
+if(debug):
+    print("Arguments _seem_ to be OK.")
 
 import subprocess
 # 0.2 Clean old files
@@ -58,24 +86,27 @@ if glob.glob("textcleaner"):
         pimpsize = os.path.getsize(pageimp) 
         print(str(round(100.0*float(pimpsize-psize)/float(psize),2))+"%")
         if(psize<pimpsize):
-            print("Probably an empty page, retaining original file.")
+            print("Probably an empty page, copying original file.")
             process = subprocess.run(['cp '+ page + " " + pageimp], shell=True, capture_output=captureoutput)
 else:
-    print("\033[93m"+"Here you might want to add some preprocessing steps for better ocr. I recommend you do")
+    print("\033[93m"+"Here(***) you might want to add some preprocessing steps for better ocr. I recommend you do")
     print("curl 'http://www.fmwconcepts.com/imagemagick/downloadcounter.php?scriptname=textcleaner&dirname=textcleaner' > textcleaner")
     print("chmod +x textcleaner")
     print("before the next run. 'textcleaner' is not included here due to licensing requirements: it is fine for private use but")
-    print("redistribution or commercial requires consent of the author. Alternatives are unpaper, scantailor, or scripting with")
-    print("imagemagick or gimp. For now I just copy the files."+"\033[0m")
+    print("redistribution or commercial use needs the author's consent. Alternatives are unpaper, scantailor, or scripting with")
+    print("imagemagick or gimp or python's openCV (https://www.dynamsoft.com/codepool/deskew-scanned-document.html).")
+    print("For now I just copy the files."+"\033[0m")
     for page, pageimp in zip(pages, pagesimp):
         process = subprocess.run(['cp '+ page + " " + pageimp], shell=True, capture_output=captureoutput)
 
 print("Compressing to png sidecar from jbig2.")
 # 1.2 Compress with JBIG2 and retain well-compressed sidecar png, page by page. 
-#     The compression is awesome but lossy. For non-lossy compression try pngcrush.
+#     The compression is awesome but lossy. We further reduce the png size with pngcrush.
 pagesic  = [page[:-4] + '_compressed' + page[-4:] for page in pagesimp]
 for pageimp, pageic in zip(pagesimp, pagesic):
-    process  = subprocess.run('jbig2 -s -p -O '+pageic+' '+pageimp+' > /dev/null', shell=True, capture_output=captureoutput)
+#    process  = subprocess.run('jbig2 -s -p -O '+pageic+' '+pageimp+' > /dev/null', shell=True, capture_output=captureoutput)
+    process  = subprocess.run('jbig2 -s -p -O '+'output.tmp.png '+pageimp+' > /dev/null', shell=True, capture_output=captureoutput)
+    process  = subprocess.run("pngcrush -l 9 output.tmp.png " + pageic, shell=True, capture_output=captureoutput)
     pimp = os.path.getsize(pageimp) 
     pcmp = os.path.getsize(pageic) 
     print(pageimp+" --> "+pageic+":    "+str(round(100.0*float(pcmp-pimp)/float(pimp),2))+"%")
@@ -92,11 +123,7 @@ process  = subprocess.run('python3 pdf.py output > output.pdf', shell=True)
 # 2.0 Apply easyocr.
 print("Applying easyocr to improved, uncompressed pages. Here(**) you may want to hand-pick some options.")
 import easyocr
-reader = easyocr.Reader(lang_list = sys.argv[2].split(":"))
-if(len(sys.argv)>4):
-    bl=sys.argv[4]
-else:
-    bl=''
+reader = easyocr.Reader(lang_list = langlist)
 # texts = [reader.readtext(page, blocklist=bl) for page in pagesimp] # changed to stuff below for progress indication
 texts = []
 for index in range(len(pagesimp)):
@@ -112,7 +139,7 @@ pdf.set_auto_page_break(False)
 pdf.set_text_shaping(True)
 pdf.add_font(fname='DejaVuSansCondensed.ttf') # put into the same folder when not found automatically
 
-print("Assembling sidecar pngs and invisible ocr text...")
+print("Assembling sidecar pngs and invisible ocr text.")
 for page, text in zip(pagesic, texts):
     # get image resolution to calculate scaling on page
     process = subprocess.run(['identify', page], capture_output=True)
@@ -146,7 +173,7 @@ s=sys.argv[1]
 pdf.output(s[:-4] + '_ocred_PNG' + s[-4:])
 
 # 4.0 Now overlay text on JBIG2-PDF using pymupdf.
-print("Inserting invisible ocr text to jbig2 pdf...")
+print("Inserting invisible ocr text to jbig2 pdf.")
 import fitz
 doc = fitz.open("output.pdf")
 
@@ -165,7 +192,7 @@ doc.close()
 
 # 5.0  Unlike everybody else in this house I CLEAN UP AFTER MYSELF.
 if cleanup:
-    print("Cleaning up...")
+    print("Cleaning up.")
     process  = subprocess.run(['rm pages-*'], shell=True)
     process  = subprocess.run(['rm output.*'], shell=True)
 
@@ -173,13 +200,13 @@ if cleanup:
 s = sys.argv[1]
 spng = s[:-4] + '_ocred_PNG' + s[-4:]
 sjb2 = s[:-4] + '_ocred_JB2' + s[-4:]
-size    = os.path.getsize(s) 
-sizepng = os.path.getsize(spng) 
-sizejb2 = os.path.getsize(sjb2) 
+size    = os.path.getsize(s)/1024 
+sizepng = os.path.getsize(spng)/1024 
+sizejb2 = os.path.getsize(sjb2)/1024 
  
-print('\033[92m'+s   +": "+"          \t"+'{:>12,.0f}'.format(size))
-print(spng+": \t"+'{:>12,.0f}'.format(sizepng)+"\t"+str(round(100.0*float(sizepng-size)/float(size),2))+"%")
-print(sjb2+": \t"+'{:>12,.0f}'.format(sizejb2)+"\t"+str(round(100.0*float(sizejb2-size)/float(size),2))+"%"+'\033[0m')
+print('\033[92m'+s   +": "+"          "+'{:>8,.0f}'.format(size)+" KB")
+print(spng+": "+'{:>8,.0f}'.format(sizepng)+" KB"+"  "+str(round(100.0*float(sizepng-size)/float(size),2))+" %")
+print(sjb2+": "+'{:>8,.0f}'.format(sizejb2)+" KB"+"  "+str(round(100.0*float(sizejb2-size)/float(size),2))+" %"+'\033[0m')
 sys.exit(1)
 
 
