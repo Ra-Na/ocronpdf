@@ -9,8 +9,8 @@ It requires python3 and the following tools:
 - pymupdf (fitz)
 - imagemagick 
 - pdftoppm
-- standard python libraries: sys, os, glob, subprocess, re
-- for parallel processing: awk, pdfinfo
+- standard python libraries: sys, os, glob, subprocess, re, time
+- for parallel processing: awk, pdfinfo, concurrent.futures
 
 Other dependencies: 
 - If found, it uses a [textcleaner script](http://www.fmwconcepts.com/imagemagick/textcleaner/index.php) for ocr preprocessing, which is not included here due to licensing requirements. 
