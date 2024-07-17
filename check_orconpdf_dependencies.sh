@@ -1,5 +1,5 @@
 #!/bin/bash
-declare -a arr=("easyocr" "img2pdf" "jbig2" "pdftoppm" "pngcrush" "pymupdf")
+declare -a arr=("easyocr" "img2pdf" "jbig2" "pdftoppm" "pngcrush" "pymupdf" "pdfinfo" "awk")
 
 exitstat=0
 
