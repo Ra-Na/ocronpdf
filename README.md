@@ -2,7 +2,7 @@
 
 is a python3 script that ocrs a pdf with a transparent text overlay, treating each page as a single image. Instead of tesseract it uses easyocr. A png- and a jb2-encoded pdf are generated. If you are patient enough to resolve the dependencies and can further take the long ocr and compression times, you are rewarded with well compressed, high quality pdfs that are searchable. 
 
-It requires python3 the following tools:
+It requires python3 and the following tools:
 - easyocr 
 - jbig2
 - pngcrush
