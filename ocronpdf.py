@@ -1,8 +1,8 @@
 #!/bin/python3
 import sys
 import glob
-def usage():
-    print("Call like so:   ./ocronpdf.py input.pdf en:de:es DPI '<_|>' dr")
+def usage(enforce):
+    print("Call like so:   ./ocronpdf.py input.pdf en:de:es DPI '<_|>' dfr")
     print("                                /           /     /    /    / ")
     print("input pdf______________________/           /     /    /    /  ")
     print("language(s) for ocr, colon-separated______/     /    /    /   ")
@@ -10,11 +10,17 @@ def usage():
     print("forbidden ocr chars between apostrophes, may be ''_/    /     ")
     print("optional, unset by default, no spaces__________________/      ")
     print("   d = debug output                                           ")
+    print("   f = force continue even on errors                          ")
     print("   r = retain image files (don't cleanup)                     ")
-    sys.exit(-1)
+    if(not enforce):
+        sys.exit(-1)
+    else:
+        print("Continuing anyway, good luck.")
 
 captureoutput = True # prevents console output from other scripts, set False for debugging info or use "d"-option
 debug = False # set True or use "d"-option
+
+enforce = False
 
 cleanup = True # set False to retain image files or use "r"-option
 
@@ -55,17 +61,30 @@ if(len(sys.argv) >= 6):
         debug = True
     if('r' in optionstring):
         cleanup = False
+    if('f' in optionstring):
+        enforce = True
 
 if(debug):
     print("Arguments _seem_ to be OK.")
 
 import subprocess
-# 0.1 Clean old files
+# 0.1 check dependencies
+proc = subprocess.run('./check_orconpdf_dependencies.sh', shell=True, capture_output=captureoutput)
+if(proc.returncode != 0):
+    print("Dependencies not met!")
+    print(proc.stdout.decode())
+    if(not enforce):
+        sys.exit(-1)
+    else:
+        print("Continuing anyway, good luck.")
+
+
+# 0.2 Clean old files
 print("Cleaning up potential garbage.")
 process  = subprocess.run(['rm pages-*'], shell=True, capture_output=captureoutput)
 process  = subprocess.run(['rm output*'], shell=True, capture_output=captureoutput)
 
-# 1.0 Break pdf into individuall pages, assuming each page is one page-sized image, portrait, A4. 
+# 1.0 Break pdf into individual pages, assuming each page is one page-sized image, portrait, A4. 
 #     This is like virtual printing. Do not use pdfimages -> belly-lands when a page contains multiple images. 
 print("Extracting pages.")
 process  = subprocess.run(['pdftoppm -png -progress -r '+sys.argv[3]+' '+sys.argv[1]+' pages'], shell=True)  
@@ -177,7 +196,7 @@ sizejb2 = os.path.getsize(jb2pdf)/1024
 print('\033[92m'+infile   +": "+"          "+'{:>8,.0f}'.format(sizeori)+" KB")
 print(pngpdf+": "+'{:>8,.0f}'.format(sizepng)+" KB"+"  "+str(round(100.0*float(sizepng-sizeori)/float(sizeori),2))+" %")
 print(jb2pdf+": "+'{:>8,.0f}'.format(sizejb2)+" KB"+"  "+str(round(100.0*float(sizejb2-sizeori)/float(sizeori),2))+" %"+'\033[0m')
-sys.exit(1)
+sys.exit(0)
 
 
 # To do:
@@ -189,7 +208,7 @@ sys.exit(1)
 
 ######### Alternative method of assembling the PDF with ocr overlay
 # I replaced fpdf usage by pymupdf usage. Pymupdf can handle JB2, unlike fpdf, so both variants are
-# ocr-overlayed in one go. If for whatever reason you want to use fpdf, here is the code:
+# ocr-overlaid in one go. If for whatever reason you want to use fpdf, here is the code:
 
 # # 3.0 Rebuild PDF from all pages. 
 # from fpdf import FPDF # needs fpdf2, not fpdf!
