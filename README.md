@@ -5,6 +5,7 @@ is a python3 script that ocrs a pdf with a transparent text overlay, assuming on
 It requires the following tools:
 - easyocr 
 - jbig2
+- pngcrush
 - fpdf2 (FPDF)
 - pymupdf (fitz)
 - imagemagick 
