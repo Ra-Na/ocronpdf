@@ -10,6 +10,7 @@ It requires python3 and the following tools:
 - imagemagick 
 - pdftoppm
 - standard python libraries: sys, os, glob, subprocess, re
+- for parallel processing: awk, pdfinfo
 
 Other dependencies: 
 - If found, it uses a [textcleaner script](http://www.fmwconcepts.com/imagemagick/textcleaner/index.php) for ocr preprocessing, which is not included here due to licensing requirements. 
@@ -25,6 +26,5 @@ Download `check_orconpdf_dependencies.sh`, `ocronpdf.py`, `pdf.py`, make them ex
 If you have it but you can't find it, you have no advantage over not having it. Scanned PDFs should be indexed and searchable. I recommend combining your PDF collection with [recoll](https://www.recoll.org/index.html) to quickly find anyting you actually have. 
 
 # To do 
-- Implement parallelization of the image processing
 - Better error handling
-- Rudimentary dependency checks are in place, but there is no version checking
+- Rudimentary dependency checks are in place, but there is no minimum version checking
