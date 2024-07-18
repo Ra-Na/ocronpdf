@@ -27,6 +27,11 @@ Download `check_orconpdf_dependencies.sh`, `ocronpdf.py`, `pdf.py`, make them ex
 # Why?
 If you have it but you can't find it, you have no advantage over not having it. Scanned PDFs should be indexed and searchable. I recommend combining your PDF collection with [recoll](https://www.recoll.org/index.html) to quickly find anyting you actually have. 
 
+# Features
+- high compression
+- state of art optical character recognition from easyocr
+- parallel processing
+
 # To do 
 - Better error handling
 - Rudimentary dependency checks are in place, but there is no minimum version checking
