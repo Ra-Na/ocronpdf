@@ -13,11 +13,13 @@ It requires python3 and the following tools:
 - for parallel processing: awk, pdfinfo, concurrent.futures
 
 Other dependencies: 
+- It includes `pdf.py` from [image-to-jbig2-pdf](https://github.com/2m/image-to-jbig2-pdf/tree/master) to assemble a pdf from the jbig2-compressed images.
 - If found, it uses a [textcleaner script](http://www.fmwconcepts.com/imagemagick/textcleaner/index.php) for ocr preprocessing, which is not included here due to licensing requirements. 
-You can use an alternative like unpaper, or download the script yourself like so:
+You can download the script and make it executable
 `curl 'http://www.fmwconcepts.com/imagemagick/downloadcounter.php?scriptname=textcleaner&dirname=textcleaner' > textcleaner`
 `chmod +x textcleaner`
-- It includes `pdf.py` from [image-to-jbig2-pdf](https://github.com/2m/image-to-jbig2-pdf/tree/master) to assemble a pdf from the jbig2-compressed images.
+or implement some alternative instead.
+
 
 # How?
 Download `check_orconpdf_dependencies.sh`, `ocronpdf.py`, `pdf.py`, make them executable and run `ocronpdf.py`.
