@@ -35,3 +35,4 @@ If you have it but you can't find it, you have no advantage over not having it. 
 # To do 
 - Better error handling
 - Rudimentary dependency checks are in place, but there is no minimum version checking
+- Currently all documents are converted to black and white, add option to preserve colors
