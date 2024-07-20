@@ -16,7 +16,8 @@ def usage(enforce):
     print("   f = force continue even on errors                          ")
     print("   r = retain image files (don't cleanup)                     ")
     print("   ppp = parallel processing on 3 processes (extrapolate)     ")
-    print("         gives minor speedup on large pdfs                    ")
+    print("         gives minor speedup on image processing on large pdfs")
+    print("         but no gain for ocr")
     
     if(not enforce):
         sys.exit(-1)
@@ -163,6 +164,7 @@ for item in pages_improved:
     string=string+' '
     string=string+item
 process = subprocess.run('jbig2 -s -p'+string, shell=True)
+print("")
 process = subprocess.run('python3 pdf.py output > output.pdf', shell=True)
 
 # 3.1 Build tiny PDF from png files. 
@@ -197,8 +199,9 @@ string=''
 for item in pages_improved_compressed:
     string=string+' '
     string=string+item
-process = subprocess.run('img2pdf'+string+" -o output.png.pdf", shell=True)
-
+print("\033[93m") # highlight potential warning output from img2pdf
+process = subprocess.run('img2pdf'+string+" --engine=internal -o output.png.pdf", shell=True)
+print("\033[0m")
 # 4.0 Apply easyocr.
 print("Applying easyocr to improved, uncompressed pages. Here(**) you may want to hand-pick some options.")
 import easyocr
