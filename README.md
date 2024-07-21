@@ -15,8 +15,7 @@ It requires python3 and the following tools:
 Other dependencies: 
 - It includes `pdf.py` from [image-to-jbig2-pdf](https://github.com/2m/image-to-jbig2-pdf/tree/master) to assemble a pdf from the jbig2-compressed images.
 - If found, it uses a [textcleaner script](http://www.fmwconcepts.com/imagemagick/textcleaner/index.php) for ocr preprocessing, which is not included here due to licensing requirements. 
-You can download the script and make it executable yourself at the above link, or implement some alternative instead like unpaper, scantailor or similar.
-
+You can review the license and download the script yourself at the above link, or implement some alternative instead like unpaper, scantailor, Python's imageCV or similar. 
 
 # How?
 Download `check_orconpdf_dependencies.sh`, `ocronpdf.py`, `pdf.py`, make them executable and run `ocronpdf.py`.
