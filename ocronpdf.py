@@ -4,8 +4,8 @@ import glob
 import time
 start_time = time.time()
 
-def usage(enforce):
-    print("Call like so:   ./ocronpdf.py input.pdf en:de:es DPI '<_|>' dfrppp")
+def usage():
+    print("Call like so:   ./ocronpdf.py input.pdf en:de:es DPI '<_|>' drppp")
     print("                                /           /     /    /    / ")
     print("input pdf______________________/           /     /    /    /  ")
     print("language(s) for ocr, colon-separated______/     /    /    /   ")
@@ -13,34 +13,28 @@ def usage(enforce):
     print("forbidden ocr chars between apostrophes, may be ''_/    /     ")
     print("optional, unset by default, no spaces__________________/      ")
     print("   d = debug output                                           ")
-    print("   f = force continue even on errors                          ")
     print("   r = retain image files (don't cleanup)                     ")
     print("   ppp = parallel processing on 3 processes (extrapolate)     ")
     print("         gives minor speedup on image processing on large pdfs")
     print("         but no gain for ocr")
     
-    if(not enforce):
-        sys.exit(-1)
-    else:
-        print("Continuing anyway, good luck.")
+    sys.exit(-1)
 
 captureoutput = True # prevents console output from other scripts, set False for debugging info or use "d"-option
 debug = False # set True or use "d"-option
 
 inparallel = False
 
-enforce = False
-
 cleanup = True # set False to retain image files or use "r"-option
 
 # 0.0 Check arguments 
 if len(sys.argv)<5:
     print("\033[93m"+"Arguments missing."+"\033[0m")
-    usage(False)
+    usage()
 # arg 1 - pdf
 if not glob.glob(sys.argv[1]):
     print("Input file not found.")
-    usage(False)
+    usage()
 else: 
     infile = sys.argv[1]
     pngpdf = infile[:-4] + '_ocred_PNG' + infile[-4:]
@@ -56,10 +50,10 @@ try:
     dpi = int(sys.argv[3])
     if dpi<1:
         print("DPI should be positive.")
-        usage(False)
+        usage()
 except:
     print("DPI should be a positive integer.")
-    usage(False)
+    usage()
 # arg 4
 bl = sys.argv[4]
 # set options, if any
@@ -70,8 +64,6 @@ if(len(sys.argv) >= 6):
         debug = True
     if('r' in optionstring):
         cleanup = False
-    if('f' in optionstring):
-        enforce = True
     if('p' in optionstring):
         cpus = optionstring.count('p')
         if cpus>1:
@@ -91,11 +83,7 @@ import subprocess
 proc = subprocess.run('./check_orconpdf_dependencies.sh', shell=True, capture_output=captureoutput)
 if(proc.returncode != 0):
     print("Dependencies not met!")
-    print(proc.stdout.decode())
-    if(not enforce):
-        sys.exit(-1)
-    else:
-        print("Continuing anyway, good luck.")
+    sys.exit(-1)
 
 
 # 0.2 Clean old files
@@ -123,29 +111,32 @@ import os
 pages_improved = [page[:-4] + '_improved' + page[-4:] for page in pages]
 
 if glob.glob("textcleaner"):
-    print("Improving "+str(noofpages)+" pages for better text recognition. Here(*) you may want to hand-pick some options.")
-    if(inparallel==False):
-        for page, page_improved in zip(pages, pages_improved):
-            print(page+" --> "+page_improved+": ",end='')
-            process  = subprocess.run('./textcleaner -e normalize -u -T -s 4 '+page+' '+page_improved, shell=True)
-            psize = os.path.getsize(page) 
-            pimpsize = os.path.getsize(page_improved) 
-            print(str(round(100.0*float(pimpsize-psize)/float(psize),2))+"%")
-            if(psize<pimpsize):
-                print("Probably an empty page, copying original file.")
-                process = subprocess.run(['cp '+ page + " " + page_improved], shell=True, capture_output=captureoutput)
+    if(os.access("./textcleaner", os.X_OK)):
+        print("Improving "+str(noofpages)+" pages for better text recognition. Here(*) you may want to hand-pick some options.")
+        if(inparallel==False):
+            for page, page_improved in zip(pages, pages_improved):
+                print(page+" --> "+page_improved+": ",end='')
+                process  = subprocess.run('./textcleaner -e normalize -u -T -s 4 '+page+' '+page_improved, shell=True)
+                psize = os.path.getsize(page) 
+                pimpsize = os.path.getsize(page_improved) 
+                print(str(round(100.0*float(pimpsize-psize)/float(psize),2))+"%")
+                if(psize<pimpsize):
+                    print("Probably an empty page, copying original file.")
+                    process = subprocess.run(['cp '+ page + " " + page_improved], shell=True, capture_output=captureoutput)
+        else:
+            commands = ['./textcleaner -e normalize -u -T -s 4 '+pages[i]+' '+pages_improved[i] for i in range(noofpages)]
+            with ProcessPoolExecutor(max_workers = cpus) as executor:
+                futures = executor.map(my_parallel_command, commands)
+            for page, page_improved in zip(pages, pages_improved):
+                psize = os.path.getsize(page) 
+                pimpsize = os.path.getsize(page_improved) 
+                print(page+" --> "+page_improved+": "+str(round(100.0*float(pimpsize-psize)/float(psize),2))+"%")
+                if(psize<pimpsize):
+                    print("Probably an empty page, copying original file.")
+                    process = subprocess.run(['cp '+ page + " " + page_improved], shell=True, capture_output=captureoutput)
     else:
-        commands = ['./textcleaner -e normalize -u -T -s 4 '+pages[i]+' '+pages_improved[i] for i in range(noofpages)]
-        with ProcessPoolExecutor(max_workers = cpus) as executor:
-            futures = executor.map(my_parallel_command, commands)
-        for page, page_improved in zip(pages, pages_improved):
-            psize = os.path.getsize(page) 
-            pimpsize = os.path.getsize(page_improved) 
-            print(page+" --> "+page_improved+": "+str(round(100.0*float(pimpsize-psize)/float(psize),2))+"%")
-            if(psize<pimpsize):
-                print("Probably an empty page, copying original file.")
-                process = subprocess.run(['cp '+ page + " " + page_improved], shell=True, capture_output=captureoutput)
-
+        print("textcleaner found but not executable. Do \"chmod +x textcleaner\" and rerun.")
+        sys.exit(-1)
 else:
     print("\033[93m"+"Here(***) you might want to add some preprocessing steps for better ocr. I recommend you do")
     print("curl 'http://www.fmwconcepts.com/imagemagick/downloadcounter.php?scriptname=textcleaner&dirname=textcleaner' > textcleaner")
@@ -310,4 +301,3 @@ sys.exit(0)
 # 
 # s=sys.argv[1]
 # pdf.output(s[:-4] + '_ocred_PNG' + s[-4:])
-
